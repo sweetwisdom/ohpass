@@ -15,38 +15,44 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/components/design-system';
-import { SectionHeader, SettingsRow, PrimaryButton } from '@/components/ui';
+import { SearchBar } from '@/components/ui';
 
-// 模拟数据
 const mockWifiList = [
-  { id: '1', name: 'Home-WiFi', isConnected: true },
-  { id: '2', name: 'Office-5G', isConnected: false },
-  { id: '3', name: 'CoffeeShop', isConnected: false },
-  { id: '4', name: 'Guest-Network', isConnected: false },
+  {
+    id: '1',
+    name: 'Home Network',
+    status: '已连接 · WPA3',
+    iconBgColor: '#007AFF',
+    showQR: true,
+    showShare: true,
+  },
+  {
+    id: '2',
+    name: 'Office-5G',
+    status: '已保存 · WPA2',
+    iconBgColor: '#34C759',
+    showQR: true,
+    showShare: false,
+  },
+  {
+    id: '3',
+    name: 'Cafe_FreeWifi',
+    status: '已保存 · 开放',
+    iconBgColor: '#FF9500',
+    showQR: false,
+    showShare: false,
+  },
 ];
 
 export default function WifiScreen() {
-  const { colors, spacing } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={['top']}
     >
-      <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Wi-Fi</Text>
-        <TouchableOpacity
-          style={[
-            styles.headerBtn,
-            { backgroundColor: colors.bgTertiary },
-          ]}
-        >
-          <Ionicons name="ellipsis-horizontal" size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Content */}
       <ScrollView
@@ -54,62 +60,85 @@ export default function WifiScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Current Connection */}
-        <View
-          style={[
-            styles.currentConnection,
-            { backgroundColor: colors.card },
-          ]}
-        >
-          <View style={styles.wifiIconContainer}>
-            <Ionicons name="wifi" size={32} color={colors.accentGreen} />
-          </View>
-          <View style={styles.connectionInfo}>
-            <Text style={[styles.connectionName, { color: colors.textPrimary }]}>
-              Home-WiFi
-            </Text>
-            <Text style={[styles.connectionStatus, { color: colors.accentGreen }]}>
-              已连接
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.disconnectBtn}>
-            <Text style={[styles.disconnectText, { color: colors.accentRed }]}>
-              断开
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Header Title */}
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Wi-Fi</Text>
 
-        {/* Wi-Fi List */}
-        <SectionHeader title="可用网络" style={styles.sectionHeader} />
+        {/* Search Bar */}
+        <SearchBar placeholder="搜索 Wi-Fi" />
 
-        <View style={styles.wifiList}>
-          {mockWifiList.map((wifi) => (
-            <SettingsRow
+        {/* Wi-Fi List - Grouped Card */}
+        <View style={[styles.wifiListCard, { borderRadius: 12 }]}>
+          {mockWifiList.map((wifi, index) => (
+            <TouchableOpacity
               key={wifi.id}
-              label={wifi.name}
-              icon={wifi.isConnected ? 'wifi' : 'wifi-outline'}
-              iconColor={wifi.isConnected ? colors.accentGreen : colors.textSecondary}
-              onPress={() => {}}
-              style={styles.wifiItem}
-            />
+              style={[
+                styles.wifiRow,
+                { backgroundColor: colors.card },
+                index < mockWifiList.length - 1 && styles.wifiRowGap,
+              ]}
+              activeOpacity={0.7}
+            >
+              {/* Icon */}
+              <View
+                style={[
+                  styles.wifiIcon,
+                  { backgroundColor: wifi.iconBgColor },
+                ]}
+              >
+                <Ionicons name="wifi" size={20} color="#FFFFFF" />
+              </View>
+
+              {/* Info */}
+              <View style={styles.wifiInfo}>
+                <Text style={[styles.wifiName, { color: colors.textPrimary }]}>
+                  {wifi.name}
+                </Text>
+                <Text style={[styles.wifiStatus, { color: colors.textSecondary }]}>
+                  {wifi.status}
+                </Text>
+              </View>
+
+              {/* Actions */}
+              <View style={styles.wifiActions}>
+                {wifi.showQR && (
+                  <Ionicons name="qr-code-outline" size={18} color={colors.accentBlue} />
+                )}
+                {wifi.showShare && (
+                  <Ionicons name="share-outline" size={18} color={colors.accentBlue} />
+                )}
+                <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+              </View>
+            </TouchableOpacity>
           ))}
         </View>
 
-        {/* Add Wi-Fi Button */}
-        <PrimaryButton
-          title="添加 Wi-Fi 网络"
-          icon="add"
-          onPress={() => {}}
-          variant="secondary"
-          style={styles.addButton}
-        />
+        {/* Share Wi-Fi Section */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          分享 Wi-Fi
+        </Text>
 
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Wi-Fi 密码会安全存储在您的密码库中
+        <View style={[styles.qrCard, { backgroundColor: colors.card }]}>
+          {/* QR Code Area */}
+          <View style={styles.qrFrame}>
+            <Ionicons name="qr-code" size={120} color="#000000" />
+          </View>
+
+          <Text style={[styles.qrName, { color: colors.textPrimary }]}>
+            Home Network
           </Text>
+
+          <Text style={[styles.qrDesc, { color: colors.textSecondary }]}>
+            扫描二维码即可连接此 Wi-Fi 网络
+          </Text>
+
+          {/* Share Button */}
+          <TouchableOpacity
+            style={[styles.shareBtn, { backgroundColor: colors.accentBlue }]}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="share-outline" size={16} color="#FFFFFF" />
+            <Text style={styles.shareBtnText}>分享</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -120,88 +149,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 34,
-    fontWeight: '700',
-  },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingHorizontal: 20,
     paddingBottom: 100,
+    gap: 20,
   },
-  currentConnection: {
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    paddingTop: 8,
+  },
+  wifiListCard: {
+    overflow: 'hidden',
+    gap: 2,
+  },
+  wifiRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
+    height: 64,
+    paddingHorizontal: 16,
+    gap: 12,
   },
-  wifiIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#34C75920',
+  wifiRowGap: {},
+  wifiIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  connectionInfo: {
+  wifiInfo: {
     flex: 1,
+    gap: 2,
   },
-  connectionName: {
+  wifiName: {
     fontSize: 16,
-    fontWeight: '600',
-  },
-  connectionStatus: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  disconnectBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  disconnectText: {
-    fontSize: 14,
     fontWeight: '500',
   },
-  sectionHeader: {
-    marginBottom: 12,
+  wifiStatus: {
+    fontSize: 13,
   },
-  wifiList: {
-    gap: 8,
-    marginBottom: 24,
-  },
-  wifiItem: {
-    marginBottom: 0,
-  },
-  addButton: {
-    marginBottom: 24,
-  },
-  infoSection: {
+  wifiActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: 12,
+    gap: 12,
   },
-  infoText: {
-    flex: 1,
+  sectionLabel: {
     fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  qrCard: {
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    gap: 16,
+  },
+  qrFrame: {
+    width: 160,
+    height: 160,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrName: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  qrDesc: {
+    fontSize: 13,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    borderRadius: 22,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  shareBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

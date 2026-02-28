@@ -3,7 +3,7 @@
  * 基于 Pencil 设计稿的设置页面
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,19 +11,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { useTheme } from '@/components/design-system';
-import { SectionHeader, SettingsRow, ToggleSwitch } from '@/components/ui';
+import { ToggleSwitch } from '@/components/ui';
 import { useThemePreference } from '@/contexts/ThemeContext';
 
 export default function SettingsScreen() {
   const { colors, isDark } = useTheme();
   const { themePreference, setThemePreference } = useThemePreference();
-  const [notifications, setNotifications] = useState(true);
 
   return (
     <SafeAreaView
@@ -32,196 +29,112 @@ export default function SettingsScreen() {
     >
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>设置</Text>
-        <TouchableOpacity
-          style={[
-            styles.headerBtn,
-            { backgroundColor: colors.bgTertiary },
-          ]}
-        >
-          <Ionicons name="ellipsis-horizontal" size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Account Section */}
-        <SectionHeader title="账户" style={styles.sectionHeader} />
-        <View style={styles.settingsList}>
-          <SettingsRow
-            label="主密码"
-            icon="key"
-            iconColor={colors.accentBlue}
-            onPress={() => {}}
-          />
-          <SettingsRow
-            label="通行密钥"
-            icon="finger-print"
-            iconColor={colors.accentPurple}
-            onPress={() => router.push('/passkey')}
-          />
-          <SettingsRow
-            label="导入数据"
-            icon="download-outline"
-            iconColor={colors.accentGreen}
-            onPress={() => {}}
-          />
-          <SettingsRow
-            label="导出数据"
-            icon="share-outline"
-            iconColor={colors.accentOrange}
-            onPress={() => {}}
-          />
+        {/* Header Title */}
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>设置</Text>
+
+        {/* 安全 Section */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>安全</Text>
+        <View style={[styles.groupCard, { borderRadius: 12 }]}>
+          {/* 主密码修改 */}
+          <TouchableOpacity
+            style={[styles.row, { backgroundColor: colors.card }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="lock-closed-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>主密码修改</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
+
+          {/* Face ID */}
+          <View style={[styles.row, { backgroundColor: colors.card }]}>
+            <Ionicons name="scan-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>Face ID</Text>
+            <ToggleSwitch value={true} onValueChange={() => {}} />
+          </View>
+
+          {/* Touch ID */}
+          <View style={[styles.row, { backgroundColor: colors.card }]}>
+            <Ionicons name="finger-print" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>Touch ID</Text>
+            <ToggleSwitch value={true} onValueChange={() => {}} />
+          </View>
+
+          {/* 自动锁定 */}
+          <TouchableOpacity
+            style={[styles.row, { backgroundColor: colors.card }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="timer-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>自动锁定</Text>
+            <Text style={[styles.rowValue, { color: colors.textSecondary }]}>1 分钟</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
+
+          {/* 深色模式 - 用户要求的功能 */}
+          <View style={[styles.row, { backgroundColor: colors.card }]}>
+            <Ionicons name="moon-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>深色模式</Text>
+            <ToggleSwitch
+              value={themePreference === 'dark' || (themePreference === 'system' && isDark)}
+              onValueChange={(val) => setThemePreference(val ? 'dark' : 'light')}
+            />
+          </View>
         </View>
 
-        {/* Appearance Section */}
-        <SectionHeader title="外观" style={styles.sectionHeader} />
-        <View style={styles.settingsList}>
-          <SettingsRow
-            label="深色模式"
-            icon="moon"
-            iconColor={colors.accentPurple}
-            showChevron={false}
-            rightElement={
-              <ToggleSwitch
-                value={themePreference === 'dark' || (themePreference === 'system' && isDark)}
-                onValueChange={(val) => setThemePreference(val ? 'dark' : 'light')}
-              />
-            }
-          />
+        {/* 数据 Section */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>数据</Text>
+        <View style={[styles.groupCard, { borderRadius: 12 }]}>
+          {/* 数据导出 */}
+          <TouchableOpacity
+            style={[styles.row, { backgroundColor: colors.card }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="download-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>数据导出</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
+
+          {/* 云备份 */}
+          <View style={[styles.row, { backgroundColor: colors.card }]}>
+            <Ionicons name="cloud-upload-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>云备份</Text>
+            <ToggleSwitch value={true} onValueChange={() => {}} />
+          </View>
+
+          {/* 恢复代码 */}
+          <TouchableOpacity
+            style={[styles.row, { backgroundColor: colors.card }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="key-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>恢复代码</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
         </View>
 
-        {/* Notifications Section */}
-        <SectionHeader title="通知" style={styles.sectionHeader} />
-        <View style={styles.settingsList}>
-          <SettingsRow
-            label="推送通知"
-            icon="notifications"
-            iconColor={colors.accentRed}
-            showChevron={false}
-            rightElement={
-              <ToggleSwitch
-                value={notifications}
-                onValueChange={(val) => setNotifications(val)}
-              />
-            }
-          />
-        </View>
+        {/* 关于 Section */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>关于</Text>
+        <View style={[styles.groupCard, { borderRadius: 12 }]}>
+          {/* 版本 */}
+          <View style={[styles.row, { backgroundColor: colors.card }]}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>版本 2.1.0</Text>
+          </View>
 
-        {/* Security Section */}
-        <SectionHeader title="安全" style={styles.sectionHeader} />
-        <View style={styles.settingsList}>
-          <SettingsRow
-            label="自动锁定"
-            icon="timer"
-            iconColor={colors.accentBlue}
-            onPress={() => {}}
-          />
-          <SettingsRow
-            label="生物识别"
-            icon="scan"
-            iconColor={colors.accentGreen}
-            showChevron={false}
-            rightElement={
-              <ToggleSwitch value={true} onValueChange={() => {}} />
-            }
-          />
-          <SettingsRow
-            label="剪贴板清除"
-            icon="clipboard"
-            iconColor={colors.accentOrange}
-            showChevron={false}
-            rightElement={
-              <ToggleSwitch value={true} onValueChange={() => {}} />
-            }
-          />
-        </View>
-
-        {/* Data Section */}
-        <SectionHeader title="数据" style={styles.sectionHeader} />
-        <View style={styles.settingsList}>
-          <SettingsRow
-            label="同步"
-            icon="cloud"
-            iconColor={colors.accentBlue}
-            onPress={() => {}}
-          />
-          <SettingsRow
-            label="备份"
-            icon="folder"
-            iconColor={colors.accentOrange}
-            onPress={() => {}}
-          />
-          <SettingsRow
-            label="存储使用"
-            icon="server"
-            iconColor={colors.textSecondary}
-            onPress={() => {}}
-          />
-        </View>
-
-        {/* About Section */}
-        <SectionHeader title="关于" style={styles.sectionHeader} />
-        <View style={styles.settingsList}>
-          <SettingsRow
-            label="帮助与支持"
-            icon="help-circle"
-            iconColor={colors.accentBlue}
-            onPress={() => {}}
-          />
-          <SettingsRow
-            label="隐私政策"
-            icon="shield-checkmark"
-            iconColor={colors.accentGreen}
-            onPress={() => {}}
-          />
-          <SettingsRow
-            label="版本"
-            icon="information-circle"
-            iconColor={colors.textSecondary}
-            showChevron={false}
-            rightElement={
-              <Text style={{ color: colors.textSecondary, fontSize: 15 }}>
-                1.0.0
-              </Text>
-            }
-          />
-        </View>
-
-        {/* Danger Zone */}
-        <SectionHeader title="危险区域" style={styles.sectionHeader} />
-        <View style={styles.settingsList}>
-          <SettingsRow
-            label="删除所有数据"
-            icon="trash"
-            iconColor={colors.accentRed}
-            onPress={() => {
-              Alert.alert(
-                '确认删除',
-                '此操作将删除所有本地数据，无法恢复。确定要继续吗？',
-                [
-                  { text: '取消', style: 'cancel' },
-                  { text: '删除', style: 'destructive' },
-                ]
-              );
-            }}
-          />
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.textTertiary }]}>
-            OhPass v1.0.0
-          </Text>
-          <Text style={[styles.footerText, { color: colors.textTertiary }]}>
-            Made with ❤️
-          </Text>
+          {/* 隐私政策 */}
+          <TouchableOpacity
+            style={[styles.row, { backgroundColor: colors.card }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="shield-outline" size={20} color={colors.accentBlue} />
+            <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>隐私政策</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -232,45 +145,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 34,
-    fontWeight: '700',
-  },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingHorizontal: 20,
     paddingBottom: 100,
-  },
-  sectionHeader: {
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  settingsList: {
     gap: 8,
   },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    gap: 8,
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    paddingTop: 8,
+    marginBottom: 16,
   },
-  footerText: {
+  sectionLabel: {
     fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginTop: 16,
+  },
+  groupCard: {
+    overflow: 'hidden',
+    gap: 2,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  rowLabel: {
+    flex: 1,
+    fontSize: 16,
+  },
+  rowValue: {
+    fontSize: 15,
   },
 });

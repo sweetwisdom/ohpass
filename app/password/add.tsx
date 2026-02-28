@@ -17,45 +17,55 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/components/design-system';
-import { PrimaryButton, ToggleSwitch } from '@/components/ui';
+
+const TAG_OPTIONS = ['网站', 'App', 'Wi-Fi', '其他'];
+
+const GEN_OPTIONS = [
+  { label: 'A-Z', key: 'upper' },
+  { label: 'a-z', key: 'lower' },
+  { label: '0-9', key: 'digits' },
+  { label: '#@$', key: 'symbols' },
+];
 
 export default function AddPasswordScreen() {
-  const { colors, spacing } = useTheme();
+  const { colors, isDark } = useTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEditing = !!id;
 
-  const [title, setTitle] = useState('');
+  const [serviceName, setServiceName] = useState('');
+  const [url, setUrl] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [url, setUrl] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [includeNumbers, setIncludeNumbers] = useState(true);
-  const [includeSymbols, setIncludeSymbols] = useState(true);
-
-  const handleBack = () => {
-    router.back();
-  };
-
-  const handleSave = () => {
-    // 实现保存功能
-    router.back();
-  };
+  const [note, setNote] = useState('');
+  const [selectedTag, setSelectedTag] = useState(0);
+  const [genOptions, setGenOptions] = useState<Record<string, boolean>>({
+    upper: true,
+    lower: true,
+    digits: true,
+    symbols: true,
+  });
+  const [generatedPassword, setGeneratedPassword] = useState('kX9#mP2$vL7@nQ');
 
   const handleGenerate = () => {
-    // 生成随机密码
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const numbers = '0123456789';
-    const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const digits = '0123456789';
+    const symbols = '!@#$%^&*()_+-=';
+    let chars = '';
+    if (genOptions.upper) chars += upper;
+    if (genOptions.lower) chars += lower;
+    if (genOptions.digits) chars += digits;
+    if (genOptions.symbols) chars += symbols;
+    if (!chars) chars = upper + lower;
     let result = '';
-    let allChars = chars;
-
-    if (includeNumbers) allChars += numbers;
-    if (includeSymbols) allChars += symbols;
-
-    for (let i = 0; i < 20; i++) {
-      result += allChars.charAt(Math.floor(Math.random() * allChars.length));
+    for (let i = 0; i < 16; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setPassword(result);
+    setGeneratedPassword(result);
+  };
+
+  const toggleGenOption = (key: string) => {
+    setGenOptions((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -63,200 +73,202 @@ export default function AddPasswordScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={['top']}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Nav Bar */}
-      <View style={[styles.navBar, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={20} color={colors.accentBlue} />
-          <Text style={[styles.backText, { color: colors.accentBlue }]}>取消</Text>
+      <View style={styles.navBar}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={[styles.navCancel, { color: colors.accentBlue }]}>取消</Text>
         </TouchableOpacity>
         <Text style={[styles.navTitle, { color: colors.textPrimary }]}>
           {isEditing ? '编辑密码' : '添加密码'}
         </Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text style={[styles.saveText, { color: colors.accentBlue }]}>保存</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={[styles.navSave, { color: colors.accentBlue }]}>保存</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Title Input */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>标题</Text>
+        {/* Icon Picker */}
+        <View style={styles.iconPickerCenter}>
           <View
             style={[
-              styles.inputContainer,
+              styles.iconPicker,
               {
-                backgroundColor: colors.card,
-                borderRadius: spacing.card.borderRadius,
+                backgroundColor: colors.bgTertiary,
+                borderColor: colors.border,
               },
             ]}
           >
+            <Ionicons name="image-outline" size={28} color={colors.textTertiary} />
+          </View>
+        </View>
+
+        {/* Form Group */}
+        <View style={[styles.formGroup, { borderRadius: 12 }]}>
+          {/* 服务名称 */}
+          <View style={[styles.formRow, { backgroundColor: colors.card }]}>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>服务名称</Text>
             <TextInput
-              style={[styles.input, { color: colors.textPrimary }]}
-              placeholder="例如: Google"
+              style={[styles.formInput, { color: colors.textPrimary }]}
+              placeholder="Google"
               placeholderTextColor={colors.textTertiary}
-              value={title}
-              onChangeText={setTitle}
+              value={serviceName}
+              onChangeText={setServiceName}
             />
           </View>
-        </View>
 
-        {/* Username Input */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>用户名</Text>
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                backgroundColor: colors.card,
-                borderRadius: spacing.card.borderRadius,
-              },
-            ]}
-          >
+          {/* 地址 */}
+          <View style={[styles.formRow, { backgroundColor: colors.card }]}>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>地址</Text>
             <TextInput
-              style={[styles.input, { color: colors.textPrimary }]}
-              placeholder="用户名或邮箱"
-              placeholderTextColor={colors.textTertiary}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        </View>
-
-        {/* Password Input */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>密码</Text>
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                backgroundColor: colors.card,
-                borderRadius: spacing.card.borderRadius,
-              },
-            ]}
-          >
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary }]}
-              placeholder="输入密码"
-              placeholderTextColor={colors.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeBtn}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-off' : 'eye'}
-                size={20}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Generate Password Options */}
-        <View
-          style={[
-            styles.optionsCard,
-            { backgroundColor: colors.card, borderRadius: spacing.card.borderRadius },
-          ]}
-        >
-          <TouchableOpacity style={styles.optionRow} onPress={handleGenerate}>
-            <View style={styles.optionInfo}>
-              <Ionicons name="refresh" size={20} color={colors.accentBlue} />
-              <Text style={[styles.optionText, { color: colors.textPrimary }]}>
-                生成强密码
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-          </TouchableOpacity>
-
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          <View style={styles.optionRow}>
-            <View style={styles.optionInfo}>
-              <Text style={[styles.optionText, { color: colors.textPrimary }]}>
-                包含数字
-              </Text>
-            </View>
-            <ToggleSwitch
-              value={includeNumbers}
-              onValueChange={setIncludeNumbers}
-            />
-          </View>
-
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          <View style={styles.optionRow}>
-            <View style={styles.optionInfo}>
-              <Text style={[styles.optionText, { color: colors.textPrimary }]}>
-                包含符号
-              </Text>
-            </View>
-            <ToggleSwitch
-              value={includeSymbols}
-              onValueChange={setIncludeSymbols}
-            />
-          </View>
-        </View>
-
-        {/* URL Input */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>网站 URL</Text>
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                backgroundColor: colors.card,
-                borderRadius: spacing.card.borderRadius,
-              },
-            ]}
-          >
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary }]}
-              placeholder="https://example.com"
+              style={[styles.formInput, { color: colors.textPrimary }]}
+              placeholder="google.com"
               placeholderTextColor={colors.textTertiary}
               value={url}
               onChangeText={setUrl}
               autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
+            />
+          </View>
+
+          {/* 用户名 */}
+          <View style={[styles.formRow, { backgroundColor: colors.card }]}>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>用户名</Text>
+            <TextInput
+              style={[styles.formInput, { color: colors.textPrimary }]}
+              placeholder="user@gmail.com"
+              placeholderTextColor={colors.textTertiary}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* 密码 */}
+          <View style={[styles.formRow, { backgroundColor: colors.card }]}>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>密码</Text>
+            <TextInput
+              style={[styles.formInput, { color: colors.textPrimary }]}
+              placeholder="••••••••••••••"
+              placeholderTextColor={colors.textTertiary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+            <Ionicons name="sparkles" size={18} color={colors.accentBlue} />
+          </View>
+
+          {/* 备注 */}
+          <View style={[styles.formRowNote, { backgroundColor: colors.card }]}>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>备注</Text>
+            <TextInput
+              style={[styles.formInput, { color: colors.textPrimary }]}
+              placeholder="个人账户，包含 Google 全套服务"
+              placeholderTextColor={colors.textTertiary}
+              value={note}
+              onChangeText={setNote}
+              multiline
             />
           </View>
         </View>
 
-        {/* Save Button */}
-        <PrimaryButton
-          title={isEditing ? '保存更改' : '添加密码'}
-          onPress={handleSave}
-          style={styles.saveButton}
-        />
+        {/* 分类标签 */}
+        <View style={styles.tagSection}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+            分类标签
+          </Text>
+          <View style={styles.tagRow}>
+            {TAG_OPTIONS.map((tag, index) => (
+              <TouchableOpacity
+                key={tag}
+                style={[
+                  styles.tagChip,
+                  selectedTag === index
+                    ? { backgroundColor: colors.accentBlue }
+                    : { backgroundColor: colors.card },
+                ]}
+                onPress={() => setSelectedTag(index)}
+              >
+                <Text
+                  style={[
+                    styles.tagText,
+                    { color: selectedTag === index ? '#FFFFFF' : colors.textPrimary },
+                  ]}
+                >
+                  {tag}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
-        {/* Delete Button (only when editing) */}
-        {isEditing && (
-          <TouchableOpacity
-            style={[
-              styles.deleteButton,
-              { backgroundColor: colors.card },
-            ]}
-          >
-            <Text style={[styles.deleteText, { color: colors.accentRed }]}>
-              删除密码
+        {/* 密码生成器 */}
+        <View style={styles.genSection}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+            密码生成器
+          </Text>
+          <View style={[styles.genCard, { backgroundColor: colors.card }]}>
+            {/* Generated password */}
+            <Text style={[styles.genPassword, { color: colors.accentBlue }]}>
+              {generatedPassword}
             </Text>
-          </TouchableOpacity>
-        )}
+
+            {/* Length */}
+            <View style={styles.genLenRow}>
+              <Text style={[styles.genLenLabel, { color: colors.textSecondary }]}>长度</Text>
+              <Text style={[styles.genLenValue, { color: colors.textPrimary }]}>16 位</Text>
+            </View>
+
+            {/* Slider (visual) */}
+            <View style={[styles.genSliderBg, { backgroundColor: colors.bgTertiary }]}>
+              <View style={[styles.genSliderFill, { backgroundColor: colors.accentBlue }]} />
+            </View>
+
+            {/* Options */}
+            <View style={styles.genOptsRow}>
+              {GEN_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.genOptChip,
+                    {
+                      backgroundColor: genOptions[opt.key]
+                        ? colors.accentBlue
+                        : colors.bgTertiary,
+                    },
+                  ]}
+                  onPress={() => toggleGenOption(opt.key)}
+                >
+                  <Text
+                    style={[
+                      styles.genOptText,
+                      {
+                        color: genOptions[opt.key] ? '#FFFFFF' : colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Regenerate button */}
+            <TouchableOpacity
+              style={[styles.genRefreshBtn, { backgroundColor: colors.accentBlue }]}
+              onPress={handleGenerate}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="refresh" size={16} color="#FFFFFF" />
+              <Text style={styles.genRefreshText}>重新生成</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -271,22 +283,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
+    height: 44,
   },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
+  navCancel: {
     fontSize: 16,
   },
   navTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
   },
-  saveText: {
+  navSave: {
     fontSize: 16,
     fontWeight: '600',
   },
@@ -294,64 +300,134 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
     paddingBottom: 40,
+    gap: 24,
   },
-  inputGroup: {
-    marginBottom: 20,
+  iconPickerCenter: {
+    alignItems: 'center',
+    paddingVertical: 8,
   },
-  inputLabel: {
+  iconPicker: {
+    width: 72,
+    height: 72,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  formGroup: {
+    overflow: 'hidden',
+    gap: 2,
+  },
+  formRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  formRowNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    height: 80,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  formLabel: {
+    fontSize: 14,
+    width: 80,
+  },
+  formInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+  },
+  tagSection: {
+    gap: 8,
+  },
+  sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.5,
-    marginBottom: 8,
   },
-  inputContainer: {
+  tagRow: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  tagChip: {
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    height: 48,
+    justifyContent: 'center',
   },
-  input: {
-    flex: 1,
-    fontSize: 16,
+  tagText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
-  eyeBtn: {
-    padding: 4,
+  genSection: {
+    gap: 8,
   },
-  optionsCard: {
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  genCard: {
+    borderRadius: 12,
     padding: 16,
-  },
-  optionInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
   },
-  optionText: {
-    fontSize: 15,
+  genPassword: {
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 2,
   },
-  divider: {
-    height: 1,
-    marginHorizontal: 16,
-  },
-  saveButton: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  deleteButton: {
-    padding: 16,
-    borderRadius: 12,
+  genLenRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  deleteText: {
-    fontSize: 16,
-    fontWeight: '500',
+  genLenLabel: {
+    fontSize: 14,
+  },
+  genLenValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  genSliderBg: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  genSliderFill: {
+    height: 6,
+    borderRadius: 3,
+    width: '65%',
+  },
+  genOptsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  genOptChip: {
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  genOptText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  genRefreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+    borderRadius: 10,
+    gap: 8,
+  },
+  genRefreshText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

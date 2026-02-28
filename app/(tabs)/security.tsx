@@ -15,216 +15,161 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/components/design-system';
-import { SectionHeader, SettingsRow, ToggleSwitch } from '@/components/ui';
 
-interface SecurityItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  icon: string;
-  iconColor: string;
-  status: 'success' | 'warning' | 'danger';
-  statusText: string;
-}
-
-const mockSecurityItems: SecurityItem[] = [
+const securityIssues = [
   {
     id: '1',
-    title: '密码强度',
-    subtitle: '您的密码强度足够',
-    icon: 'shield-checkmark',
-    iconColor: '#34C759',
-    status: 'success',
-    statusText: '安全',
+    title: '弱密码',
+    desc: '2 个账户使用弱密码',
+    icon: 'alert-triangle' as const,
+    iconColor: '#FF3B30',
+    iconBg: '#FF3B3022',
+    actionText: '修复',
+    actionColor: '#007AFF',
   },
   {
     id: '2',
-    title: '数据泄露检查',
-    subtitle: '检测到 2 个泄露的密码',
-    icon: 'warning',
+    title: '重复密码',
+    desc: '3 个账户使用相同密码',
+    icon: 'copy-outline' as const,
     iconColor: '#FF9500',
-    status: 'warning',
-    statusText: '风险',
+    iconBg: '#FF950022',
+    actionText: '修复',
+    actionColor: '#007AFF',
   },
   {
     id: '3',
-    title: '双因素认证',
-    subtitle: '已为 15 个账户启用',
-    icon: 'lock-closed',
-    iconColor: '#007AFF',
-    status: 'success',
-    statusText: '已启用',
-  },
-  {
-    id: '4',
-    title: '安全登录',
-    subtitle: '使用通行密钥登录',
-    icon: 'key',
-    iconColor: '#5856D6',
-    status: 'success',
-    statusText: '已启用',
+    title: '泄露检测',
+    desc: '1 个密码已出现在泄露数据库中',
+    icon: 'shield-outline' as const,
+    iconColor: '#FF3B30',
+    iconBg: '#FF3B3022',
+    actionText: '修改',
+    actionColor: '#FF3B30',
   },
 ];
 
+const passedChecks = [
+  { id: '1', text: '双重验证已启用 (5 个账户)' },
+  { id: '2', text: '自动锁定已启用' },
+];
+
 export default function SecurityScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={['top']}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>安全</Text>
-        <TouchableOpacity
-          style={[
-            styles.headerBtn,
-            { backgroundColor: colors.bgTertiary },
-          ]}
-        >
-          <Ionicons name="ellipsis-horizontal" size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Security Score Card */}
-        <View
-          style={[
-            styles.scoreCard,
-            { backgroundColor: colors.card },
-          ]}
-        >
-          <View style={styles.scoreHeader}>
-            <Text style={[styles.scoreTitle, { color: colors.textPrimary }]}>
-              安全评分
-            </Text>
+        {/* Header Title */}
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+          安全检测
+        </Text>
+
+        {/* Score Card with Circular Ring */}
+        <View style={[styles.scoreCard, { backgroundColor: colors.card }]}>
+          {/* Score Ring */}
+          <View style={styles.scoreRing}>
+            {/* Background circle */}
             <View
               style={[
-                styles.scoreBadge,
-                { backgroundColor: colors.accentGreen + '20' },
-              ]}
-            >
-              <Text style={[styles.scoreValue, { color: colors.accentGreen }]}>
-                85
-              </Text>
-            </View>
-          </View>
-          <View style={styles.scoreBar}>
-            <View
-              style={[
-                styles.scoreProgress,
-                {
-                  width: '85%',
-                  backgroundColor: colors.accentGreen,
-                },
+                styles.ringBg,
+                { borderColor: colors.bgTertiary || '#2C2C2E' },
               ]}
             />
+            {/* Score arc - simulated with a partial border */}
+            <View
+              style={[
+                styles.ringProgress,
+                { borderColor: colors.accentGreen, borderRightColor: 'transparent' },
+              ]}
+            />
+            {/* Score number */}
+            <Text style={[styles.scoreNum, { color: colors.accentGreen }]}>
+              82
+            </Text>
           </View>
-          <Text style={[styles.scoreSubtitle, { color: colors.textSecondary }]}>
-            您的账户安全状态良好
+
+          <Text style={[styles.scoreLabel, { color: colors.textPrimary }]}>
+            安全评分：良好
+          </Text>
+          <Text style={[styles.scoreDesc, { color: colors.textSecondary }]}>
+            发现 3 个安全问题需要处理
           </Text>
         </View>
 
-        {/* Security Items */}
-        <SectionHeader title="安全检查" style={styles.sectionHeader} />
+        {/* Security Issues Section */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          安全问题
+        </Text>
 
-        <View style={styles.securityList}>
-          {mockSecurityItems.map((item) => (
+        <View style={styles.issuesList}>
+          {securityIssues.map((issue) => (
             <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.securityItem,
-                { backgroundColor: colors.card },
-              ]}
+              key={issue.id}
+              style={[styles.issueCard, { backgroundColor: colors.card }]}
               activeOpacity={0.7}
             >
               <View
                 style={[
-                  styles.securityIcon,
-                  { backgroundColor: item.iconColor + '20' },
+                  styles.issueBadge,
+                  { backgroundColor: issue.iconBg },
                 ]}
               >
                 <Ionicons
-                  name={item.icon as any}
+                  name={issue.icon as any}
                   size={20}
-                  color={item.iconColor}
+                  color={issue.iconColor}
                 />
               </View>
-              <View style={styles.securityInfo}>
-                <Text style={[styles.securityTitle, { color: colors.textPrimary }]}>
-                  {item.title}
+              <View style={styles.issueInfo}>
+                <Text style={[styles.issueName, { color: colors.textPrimary }]}>
+                  {issue.title}
                 </Text>
-                <Text style={[styles.securitySubtitle, { color: colors.textSecondary }]}>
-                  {item.subtitle}
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor:
-                      item.status === 'success'
-                        ? colors.accentGreen + '20'
-                        : item.status === 'warning'
-                        ? colors.accentOrange + '20'
-                        : colors.accentRed + '20',
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.statusText,
-                    {
-                      color:
-                        item.status === 'success'
-                          ? colors.accentGreen
-                          : item.status === 'warning'
-                          ? colors.accentOrange
-                          : colors.accentRed,
-                    },
-                  ]}
-                >
-                  {item.statusText}
+                <Text style={[styles.issueDesc, { color: colors.textSecondary }]}>
+                  {issue.desc}
                 </Text>
               </View>
+              <Text style={[styles.issueAction, { color: issue.actionColor }]}>
+                {issue.actionText}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Settings */}
-        <SectionHeader title="安全设置" style={styles.sectionHeader} />
+        {/* Passed Checks Section */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          已通过检查
+        </Text>
 
-        <View style={styles.settingsList}>
-          <SettingsRow
-            label="自动锁定"
-            icon="timer-outline"
-            iconColor={colors.accentBlue}
-            onPress={() => {}}
-          />
-          <SettingsRow
-            label="生物识别"
-            icon="finger-print"
-            iconColor={colors.accentGreen}
-            rightElement={
-              <ToggleSwitch value={true} onValueChange={() => {}} />
-            }
-          />
-          <SettingsRow
-            label="剪贴板清除"
-            icon="clipboard-outline"
-            iconColor={colors.accentOrange}
-            rightElement={
-              <ToggleSwitch value={true} onValueChange={() => {}} />
-            }
-          />
+        <View style={[styles.passedListCard, { borderRadius: 12 }]}>
+          {passedChecks.map((check, index) => (
+            <View
+              key={check.id}
+              style={[
+                styles.passedRow,
+                { backgroundColor: colors.card },
+                index < passedChecks.length - 1 && styles.passedRowGap,
+              ]}
+            >
+              <Ionicons
+                name="checkmark-circle"
+                size={18}
+                color={colors.accentGreen}
+              />
+              <Text style={[styles.passedText, { color: colors.textPrimary }]}>
+                {check.text}
+              </Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -235,114 +180,108 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 34,
-    fontWeight: '700',
-  },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingHorizontal: 20,
     paddingBottom: 100,
+    gap: 20,
+  },
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    paddingTop: 8,
   },
   scoreCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  scoreHeader: {
-    flexDirection: 'row',
+    borderRadius: 16,
+    padding: 24,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    gap: 16,
   },
-  scoreTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scoreBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  scoreRing: {
+    width: 120,
+    height: 120,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scoreValue: {
-    fontSize: 18,
+  ringBg: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 8,
+  },
+  ringProgress: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 8,
+    transform: [{ rotate: '-45deg' }],
+  },
+  scoreNum: {
+    fontSize: 36,
     fontWeight: '700',
   },
-  scoreBar: {
-    height: 6,
-    backgroundColor: '#E5E5EA',
-    borderRadius: 3,
-    marginBottom: 12,
-    overflow: 'hidden',
+  scoreLabel: {
+    fontSize: 16,
+    fontWeight: '600',
   },
-  scoreProgress: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  scoreSubtitle: {
+  scoreDesc: {
     fontSize: 13,
   },
-  sectionHeader: {
-    marginBottom: 12,
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  securityList: {
-    gap: 8,
-    marginBottom: 24,
+  issuesList: {
+    gap: 12,
   },
-  securityItem: {
+  issueCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
     borderRadius: 12,
+    padding: 16,
+    gap: 12,
   },
-  securityIcon: {
+  issueBadge: {
     width: 40,
     height: 40,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  securityInfo: {
+  issueInfo: {
     flex: 1,
+    gap: 2,
   },
-  securityTitle: {
-    fontSize: 15,
+  issueName: {
+    fontSize: 16,
     fontWeight: '500',
   },
-  securitySubtitle: {
+  issueDesc: {
     fontSize: 13,
-    marginTop: 2,
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
+  issueAction: {
+    fontSize: 14,
     fontWeight: '600',
   },
-  settingsList: {
-    gap: 8,
+  passedListCard: {
+    overflow: 'hidden',
+    gap: 2,
+  },
+  passedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  passedRowGap: {},
+  passedText: {
+    fontSize: 15,
+    flex: 1,
   },
 });

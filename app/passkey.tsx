@@ -16,131 +16,139 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '@/components/design-system';
-import { SectionHeader, SettingsRow, ToggleSwitch, PrimaryButton } from '@/components/ui';
 
-interface PasskeyItem {
-  id: string;
-  name: string;
-  type: 'face' | 'touch' | 'security-key';
-  lastUsed: string;
-}
-
-const mockPasskeys: PasskeyItem[] = [
-  { id: '1', name: 'Face ID', type: 'face', lastUsed: '2024-01-15' },
-  { id: '2', name: 'Touch ID', type: 'touch', lastUsed: '2024-01-14' },
-  { id: '3', name: 'YubiKey', type: 'security-key', lastUsed: '2024-01-10' },
+const mockPasskeys = [
+  {
+    id: '1',
+    name: 'Google',
+    icon: 'globe-outline' as const,
+    iconBg: '#007AFF',
+    device: 'iPhone 15 Pro · 已绑定',
+    deviceIcon: 'phone-portrait-outline' as const,
+    active: true,
+  },
+  {
+    id: '2',
+    name: 'Apple',
+    icon: 'logo-apple' as const,
+    iconBg: '#000000',
+    device: 'MacBook Pro · 已绑定',
+    deviceIcon: 'laptop-outline' as const,
+    active: true,
+  },
+  {
+    id: '3',
+    name: 'GitHub',
+    icon: 'logo-github' as const,
+    iconBg: '#333333',
+    device: 'iPad Air · 已停用',
+    deviceIcon: 'phone-portrait-outline' as const,
+    active: false,
+  },
 ];
 
 export default function PasskeyScreen() {
-  const { colors } = useTheme();
-
-  const handleBack = () => {
-    router.back();
-  };
-
-  const getPasskeyIcon = (type: PasskeyItem['type']) => {
-    switch (type) {
-      case 'face':
-        return 'scan';
-      case 'touch':
-        return 'finger-print';
-      case 'security-key':
-        return 'key';
-      default:
-        return 'key';
-    }
-  };
+  const { colors, isDark } = useTheme();
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={['top']}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={20} color={colors.accentBlue} />
-          <Text style={[styles.backText, { color: colors.accentBlue }]}>返回</Text>
+          <Text style={[styles.backText, { color: colors.accentBlue }]}>设置</Text>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>通行密钥</Text>
         <View style={styles.placeholder} />
       </View>
 
-      {/* Content */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Section */}
-        <View
-          style={[
-            styles.heroCard,
-            { backgroundColor: colors.card },
-          ]}
-        >
-          <View style={styles.heroIconContainer}>
-            <Ionicons name="finger-print" size={48} color={colors.accentPurple} />
+        {/* Description Card */}
+        <View style={[styles.descCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.descIcon, { backgroundColor: '#5856D622' }]}>
+            <Ionicons name="key" size={28} color="#5856D6" />
           </View>
-          <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>
-            使用通行密钥登录
+          <Text style={[styles.descTitle, { color: colors.textPrimary }]}>
+            无密码登录
           </Text>
-          <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-            通行密钥比传统密码更安全、更便捷
+          <Text style={[styles.descText, { color: colors.textSecondary }]}>
+            通行密钥使用生物识别替代传统密码，更安全、更便捷
           </Text>
         </View>
 
-        {/* Passkey List */}
-        <SectionHeader title="已添加的通行密钥" style={styles.sectionHeader} />
+        {/* 已注册通行密钥 */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          已注册通行密钥
+        </Text>
 
-        <View style={styles.passkeyList}>
-          {mockPasskeys.map((passkey) => (
-            <SettingsRow
-              key={passkey.id}
-              label={passkey.name}
-              icon={getPasskeyIcon(passkey.type)}
-              iconColor={colors.accentPurple}
-              onPress={() => {}}
-              rightElement={
-                <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
-                  {passkey.lastUsed}
+        <View style={[styles.groupCard, { borderRadius: 12 }]}>
+          {mockPasskeys.map((pk) => (
+            <TouchableOpacity
+              key={pk.id}
+              style={[styles.pkRow, { backgroundColor: colors.card }]}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.pkIcon, { backgroundColor: pk.iconBg }]}>
+                <Ionicons name={pk.icon as any} size={20} color="#FFFFFF" />
+              </View>
+              <View style={styles.pkInfo}>
+                <Text style={[styles.pkName, { color: colors.textPrimary }]}>
+                  {pk.name}
                 </Text>
-              }
-              style={styles.passkeyItem}
-            />
+                <View style={styles.pkDevice}>
+                  <Ionicons
+                    name={pk.deviceIcon as any}
+                    size={12}
+                    color={pk.active ? colors.accentGreen : colors.textTertiary}
+                  />
+                  <Text
+                    style={[
+                      styles.pkDeviceText,
+                      { color: pk.active ? colors.accentGreen : colors.textTertiary },
+                    ]}
+                  >
+                    {pk.device}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+            </TouchableOpacity>
           ))}
         </View>
 
-        {/* Add Passkey */}
-        <PrimaryButton
-          title="添加通行密钥"
-          icon="add"
-          onPress={() => {}}
-          style={styles.addButton}
-        />
+        {/* 管理 */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          管理
+        </Text>
 
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoRow}>
-            <Ionicons name="shield-checkmark" size={20} color={colors.accentGreen} />
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              更安全 - 无需记住复杂密码
+        <View style={[styles.groupCard, { borderRadius: 12 }]}>
+          <TouchableOpacity
+            style={[styles.mgmtRow, { backgroundColor: colors.card }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={colors.accentBlue} />
+            <Text style={[styles.mgmtText, { color: colors.accentBlue }]}>
+              添加新通行密钥
             </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="flash" size={20} color={colors.accentBlue} />
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              更快速 - 一步登录
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.mgmtRow, { backgroundColor: colors.card }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.accentRed} />
+            <Text style={[styles.mgmtText, { color: colors.accentRed }]}>
+              删除已停用的密钥
             </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="globe" size={20} color={colors.accentOrange} />
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              跨设备 - 同步您的通行密钥
-            </Text>
-          </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -156,8 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
+    height: 44,
   },
   backBtn: {
     flexDirection: 'row',
@@ -168,7 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
   },
   placeholder: {
@@ -178,58 +185,79 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
     paddingBottom: 40,
+    gap: 20,
   },
-  heroCard: {
-    padding: 24,
+  descCard: {
     borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  heroIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#5856D620',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  heroTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  sectionHeader: {
-    marginBottom: 12,
-  },
-  passkeyList: {
-    gap: 8,
-    marginBottom: 24,
-  },
-  passkeyItem: {
-    marginBottom: 0,
-  },
-  addButton: {
-    marginBottom: 32,
-  },
-  infoSection: {
-    gap: 16,
-    padding: 16,
-    borderRadius: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
+    padding: 20,
     alignItems: 'center',
     gap: 12,
   },
-  infoText: {
+  descIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  descTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  descText: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  groupCard: {
+    overflow: 'hidden',
+    gap: 2,
+  },
+  pkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  pkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pkInfo: {
     flex: 1,
-    fontSize: 14,
+    gap: 2,
+  },
+  pkName: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  pkDevice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pkDeviceText: {
+    fontSize: 12,
+  },
+  mgmtRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  mgmtText: {
+    flex: 1,
+    fontSize: 16,
   },
 });
