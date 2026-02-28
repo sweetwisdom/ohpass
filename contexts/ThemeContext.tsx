@@ -1,19 +1,20 @@
 /**
  * OhPass - 主题偏好 Context
  * 管理用户的深色模式偏好，支持持久化存储
+ * 通过 Context 分发解析后的 colorScheme，兼容所有平台（Native + Web）
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { Appearance } from 'react-native';
+import { Appearance, type ColorSchemeName } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ThemePreference = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
-  /** 当前用户的主题偏好 */
+  /** 用户的主题偏好设置 */
   themePreference: ThemePreference;
-  /** 当前是否为深色模式（计算后的实际值） */
-  isDark: boolean;
+  /** 解析后的颜色方案（'light' | 'dark'） */
+  colorScheme: 'light' | 'dark';
   /** 设置主题偏好 */
   setThemePreference: (preference: ThemePreference) => void;
 }
@@ -22,12 +23,15 @@ const STORAGE_KEY = 'ohpass_theme_preference';
 
 const ThemeContext = createContext<ThemeContextType>({
   themePreference: 'system',
-  isDark: false,
+  colorScheme: 'light',
   setThemePreference: () => {},
 });
 
 export function ThemePreferenceProvider({ children }: { children: React.ReactNode }) {
   const [themePreference, setThemePreferenceState] = useState<ThemePreference>('system');
+  const [systemScheme, setSystemScheme] = useState<ColorSchemeName>(
+    Appearance.getColorScheme() ?? 'light'
+  );
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 从 AsyncStorage 读取持久化的偏好
@@ -35,51 +39,50 @@ export function ThemePreferenceProvider({ children }: { children: React.ReactNod
     AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
         setThemePreferenceState(stored);
-        applyTheme(stored);
       }
       setIsLoaded(true);
     });
   }, []);
 
-  const applyTheme = useCallback((preference: ThemePreference) => {
-    // Appearance.setColorScheme 会全局覆盖 useColorScheme() 的返回值
-    switch (preference) {
-      case 'dark':
-        Appearance.setColorScheme('dark');
-        break;
-      case 'light':
-        Appearance.setColorScheme('light');
-        break;
-      case 'system':
-        Appearance.setColorScheme(null); // 跟随系统
-        break;
-    }
+  // 监听系统主题变化（当偏好为 'system' 时需要响应）
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme: newScheme }) => {
+      setSystemScheme(newScheme ?? 'light');
+    });
+    return () => subscription.remove();
   }, []);
 
   const setThemePreference = useCallback((preference: ThemePreference) => {
     setThemePreferenceState(preference);
-    applyTheme(preference);
     AsyncStorage.setItem(STORAGE_KEY, preference);
-  }, [applyTheme]);
+  }, []);
 
-  const isDark = (() => {
+  // 根据偏好计算最终的颜色方案
+  const colorScheme: 'light' | 'dark' = (() => {
     if (themePreference === 'system') {
-      return Appearance.getColorScheme() === 'dark';
+      return systemScheme === 'dark' ? 'dark' : 'light';
     }
-    return themePreference === 'dark';
+    return themePreference;
   })();
 
   if (!isLoaded) {
-    return null; // 等待偏好加载完成再渲染
+    return null;
   }
 
   return (
-    <ThemeContext.Provider value={{ themePreference, isDark, setThemePreference }}>
+    <ThemeContext.Provider value={{ themePreference, colorScheme, setThemePreference }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
+/** 获取主题偏好和设置方法 */
 export function useThemePreference() {
   return useContext(ThemeContext);
+}
+
+/** 获取解析后的颜色方案，替代 useColorScheme */
+export function useResolvedColorScheme(): 'light' | 'dark' {
+  const { colorScheme } = useContext(ThemeContext);
+  return colorScheme;
 }

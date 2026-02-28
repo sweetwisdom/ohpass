@@ -8,15 +8,14 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ThemePreferenceProvider } from '@/contexts/ThemeContext';
+import { ThemePreferenceProvider, useResolvedColorScheme } from '@/contexts/ThemeContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
 function RootLayoutContent() {
-  const colorScheme = useColorScheme();
+  const colorScheme = useResolvedColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

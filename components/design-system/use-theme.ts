@@ -3,7 +3,7 @@
  * 基于 Pencil 设计稿的主题 Hook
  */
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useResolvedColorScheme } from '@/contexts/ThemeContext';
 import { Colors } from './colors';
 import type { ColorKey } from './colors';
 import { Typography } from './typography';
@@ -20,7 +20,7 @@ export interface Theme {
 }
 
 export function useTheme(): Theme {
-  const colorScheme = useColorScheme();
+  const colorScheme = useResolvedColorScheme();
   const isDark = colorScheme === 'dark';
 
   return {
