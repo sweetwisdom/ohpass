@@ -1,6 +1,5 @@
 {
   "enabledPlugins": {
-    "expo-app-design@expo-plugins": true,
-    "expo-deployment@expo-plugins": true
+    
   }
 }

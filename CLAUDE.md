@@ -198,6 +198,56 @@ import { Ionicons } from '@expo/vector-icons';
 <Ionicons name="key" size={24} color={colors.primary} />
 ```
 
+## 自动 Git 工作流
+
+完成每个功能或修改任务后，**自动执行以下 Git 操作**（无需用户确认）：
+
+### 自动提交规则
+
+1. **每完成一个有意义的变更后自动提交**（新功能、Bug 修复、重构等）
+2. **提交前自动检查**：确保代码无语法错误
+3. **使用 Git MCP 工具**执行所有 Git 操作（`git_add` → `git_commit`）
+
+### Commit Message 规范
+
+使用中文 + Conventional Commits 格式：
+
+```
+<type>: <简短描述>
+
+[可选的详细说明]
+```
+
+**类型 (type)**:
+- `feat`: 新功能
+- `fix`: Bug 修复
+- `style`: 样式调整（不影响逻辑）
+- `refactor`: 代码重构
+- `docs`: 文档更新
+- `chore`: 构建/工具/配置变更
+
+**示例**:
+```
+feat: 添加密码详情页
+fix: 修复搜索框输入延迟问题
+style: 调整卡片圆角和间距
+refactor: 提取公共主题 Hook
+```
+
+### 自动提交流程
+
+```
+1. 完成代码修改
+2. git_add - 暂存相关文件（仅添加本次变更的文件，不要 add 全部）
+3. git_commit - 使用规范的 commit message 提交
+```
+
+### 不自动提交的情况
+
+- 仅修改 `.claude/` 目录下的配置文件
+- 用户明确要求不提交
+- 代码处于半完成状态（需要后续步骤才能工作）
+
 ## 验证检查
 
 提交代码前确保：

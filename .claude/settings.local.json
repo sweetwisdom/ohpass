@@ -1,13 +1,23 @@
 {
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "filesystem",
-    "git",
-    "memory"
-  ],
   "permissions": {
     "allow": [
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "mcp__git__git_status",
+      "mcp__git__git_add",
+      "mcp__git__git_commit",
+      "mcp__git__git_diff_unstaged",
+      "mcp__git__git_diff_staged",
+      "mcp__git__git_log",
+      "mcp__git__git_branch",
+      "mcp__git__git_diff",
+      "mcp__git__git_show",
+      "mcp__git__git_create_branch",
+      "mcp__git__git_checkout"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "git",
+    "memory"
+  ]
 }
