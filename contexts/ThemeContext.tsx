@@ -1,12 +1,11 @@
 /**
  * OhPass - 主题偏好 Context
- * 管理用户的深色模式偏好，支持持久化存储
+ * 管理用户的深色模式偏好
  * 通过 Context 分发解析后的 colorScheme，兼容所有平台（Native + Web）
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Appearance, type ColorSchemeName } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ThemePreference = 'light' | 'dark' | 'system';
 
@@ -19,8 +18,6 @@ interface ThemeContextType {
   setThemePreference: (preference: ThemePreference) => void;
 }
 
-const STORAGE_KEY = 'ohpass_theme_preference';
-
 const ThemeContext = createContext<ThemeContextType>({
   themePreference: 'system',
   colorScheme: 'light',
@@ -32,17 +29,6 @@ export function ThemePreferenceProvider({ children }: { children: React.ReactNod
   const [systemScheme, setSystemScheme] = useState<ColorSchemeName>(
     Appearance.getColorScheme() ?? 'light'
   );
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // 从 AsyncStorage 读取持久化的偏好
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
-      if (stored === 'light' || stored === 'dark' || stored === 'system') {
-        setThemePreferenceState(stored);
-      }
-      setIsLoaded(true);
-    });
-  }, []);
 
   // 监听系统主题变化（当偏好为 'system' 时需要响应）
   useEffect(() => {
@@ -54,7 +40,6 @@ export function ThemePreferenceProvider({ children }: { children: React.ReactNod
 
   const setThemePreference = useCallback((preference: ThemePreference) => {
     setThemePreferenceState(preference);
-    AsyncStorage.setItem(STORAGE_KEY, preference);
   }, []);
 
   // 根据偏好计算最终的颜色方案
@@ -64,10 +49,6 @@ export function ThemePreferenceProvider({ children }: { children: React.ReactNod
     }
     return themePreference;
   })();
-
-  if (!isLoaded) {
-    return null;
-  }
 
   return (
     <ThemeContext.Provider value={{ themePreference, colorScheme, setThemePreference }}>
