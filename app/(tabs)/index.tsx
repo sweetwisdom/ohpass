@@ -3,20 +3,20 @@
  * 基于 Pencil 设计稿的首页-密码库
  */
 
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  StatusBar,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '@/components/design-system';
+import { FilterChip, PasswordRow, PrimaryButton, SearchBar, SectionHeader } from '@/components/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useTheme } from '@/components/design-system';
-import { SearchBar, FilterChip, SectionHeader, PasswordRow, PrimaryButton } from '@/components/ui';
+import React, { useState } from 'react';
+import {
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // 模拟数据
 const mockPasswords = [
@@ -74,11 +74,7 @@ export default function PasswordScreen() {
       </View>
 
       {/* Filter Chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
+      <View style={styles.filterRow}>
         {filterOptions.map((filter) => (
           <FilterChip
             key={filter}
@@ -87,7 +83,7 @@ export default function PasswordScreen() {
             onPress={() => setActiveFilter(filter)}
           />
         ))}
-      </ScrollView>
+      </View>
 
       {/* Content */}
       <ScrollView
@@ -157,9 +153,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   filterRow: {
+     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     gap: 8,
     marginBottom: 16,
+    height: 40, // 固定高度
+    
   },
   content: {
     flex: 1,
