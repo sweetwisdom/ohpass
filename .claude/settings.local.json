@@ -1,22 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(head:*)",
-      "mcp__git__git_status",
-      "mcp__git__git_add",
-      "mcp__git__git_commit",
-      "mcp__git__git_diff_unstaged",
-      "mcp__git__git_diff_staged",
-      "mcp__git__git_log",
-      "mcp__git__git_branch",
-      "mcp__git__git_diff",
-      "mcp__git__git_show",
-      "mcp__git__git_create_branch",
-      "mcp__git__git_checkout",
-      "Bash(npx expo install @react-native-async-storage/async-storage)",
-      "Bash(pnpm add @react-native-async-storage/async-storage)",
-      "Bash(pnpm *)",
-      "Bash(npx *)"
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__git__*",
+      "mcp__memory__*",
+      "mcp__pencil__*",
+      "mcp__sequential-thinking__*"
     ]
   },
   "enableAllProjectMcpServers": true,
