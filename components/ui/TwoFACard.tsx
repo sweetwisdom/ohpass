@@ -151,8 +151,10 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   timerWrap: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
-    gap: 2,
+    justifyContent: 'center',
   },
   ring: {
     position: 'absolute',
@@ -160,5 +162,6 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 10,
     fontWeight: '600',
+    lineHeight: 10,
   },
 });
