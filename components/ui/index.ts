@@ -18,3 +18,4 @@ export { TwoFACard } from './TwoFACard';
 export { ToggleSwitch } from './ToggleSwitch';
 export { TabBar } from './TabBar';
 export { StatusBar } from './StatusBar';
+export { QRCodeView, buildWifiQRString } from './QRCodeView';

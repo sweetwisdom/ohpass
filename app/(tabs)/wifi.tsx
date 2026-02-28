@@ -1,6 +1,6 @@
 /**
  * OhPass - Wi-Fi 管理页面
- * 接入真实数据，支持增删改查和复制密码
+ * 接入真实数据，支持增删改查、复制密码、QR 码分享
  */
 
 import React, { useState } from 'react';
@@ -20,8 +20,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '@/components/design-system';
 import { SearchBar, PrimaryButton } from '@/components/ui';
+import { QRCodeView, buildWifiQRString } from '@/components/ui/QRCodeView';
 import { useData } from '@/contexts/DataContext';
 import { getCategoryColor } from '@/utils/password';
+import type { WifiNetwork } from '@/services/database';
 
 const SECURITY_TYPES = ['WPA2', 'WPA3', 'WEP', '开放'];
 
@@ -34,6 +36,7 @@ export default function WifiScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [newSecurity, setNewSecurity] = useState(0);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [qrWifi, setQrWifi] = useState<WifiNetwork | null>(null);
 
   const filtered = searchQuery
     ? wifiNetworks.filter(w => w.ssid.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -53,7 +56,10 @@ export default function WifiScreen() {
         {
           text: '删除',
           style: 'destructive',
-          onPress: () => removeWifiNetwork(id),
+          onPress: () => {
+            removeWifiNetwork(id);
+            if (qrWifi?.id === id) setQrWifi(null);
+          },
         },
       ]
     );
@@ -63,12 +69,16 @@ export default function WifiScreen() {
     setShowPasswords(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const handleShowQR = (wifi: WifiNetwork) => {
+    setQrWifi(qrWifi?.id === wifi.id ? null : wifi);
+  };
+
   const handleAdd = async () => {
     if (!newSsid.trim()) {
       Alert.alert('提示', '请输入 Wi-Fi 名称');
       return;
     }
-    if (!newPassword.trim()) {
+    if (!newPassword.trim() && SECURITY_TYPES[newSecurity] !== '开放') {
       Alert.alert('提示', '请输入密码');
       return;
     }
@@ -135,7 +145,7 @@ export default function WifiScreen() {
                   { backgroundColor: colors.card },
                   index < filtered.length - 1 && styles.wifiRowGap,
                 ]}
-                onPress={() => handleCopyPassword(wifi.password, wifi.ssid)}
+                onPress={() => handleShowQR(wifi)}
                 onLongPress={() => handleDelete(wifi.id, wifi.ssid)}
                 activeOpacity={0.7}
               >
@@ -160,6 +170,9 @@ export default function WifiScreen() {
                       color={colors.accentBlue}
                     />
                   </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleShowQR(wifi)}>
+                    <Ionicons name="qr-code-outline" size={18} color={colors.accentBlue} />
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleCopyPassword(wifi.password, wifi.ssid)}>
                     <Ionicons name="copy-outline" size={18} color={colors.accentBlue} />
                   </TouchableOpacity>
@@ -167,6 +180,55 @@ export default function WifiScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        )}
+
+        {/* QR Code Share Card */}
+        {qrWifi && (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              分享 Wi-Fi
+            </Text>
+
+            <View style={[styles.qrCard, { backgroundColor: colors.card }]}>
+              {/* QR Code */}
+              <View style={styles.qrFrame}>
+                <QRCodeView
+                  value={buildWifiQRString(qrWifi.ssid, qrWifi.password, qrWifi.security_type)}
+                  size={180}
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  backgroundColor={isDark ? '#1C1C1E' : '#FFFFFF'}
+                />
+              </View>
+
+              <Text style={[styles.qrName, { color: colors.textPrimary }]}>
+                {qrWifi.ssid}
+              </Text>
+
+              <Text style={[styles.qrDesc, { color: colors.textSecondary }]}>
+                扫描二维码即可连接此 Wi-Fi 网络
+              </Text>
+
+              {/* Action Buttons */}
+              <View style={styles.qrActions}>
+                <TouchableOpacity
+                  style={[styles.qrActionBtn, { backgroundColor: colors.accentBlue }]}
+                  onPress={() => handleCopyPassword(qrWifi.password, qrWifi.ssid)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="copy-outline" size={16} color="#FFFFFF" />
+                  <Text style={styles.qrActionText}>复制密码</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.qrActionBtn, { backgroundColor: colors.bgTertiary }]}
+                  onPress={() => setQrWifi(null)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="close" size={16} color={colors.textPrimary} />
+                  <Text style={[styles.qrActionText, { color: colors.textPrimary }]}>关闭</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
         )}
 
         <PrimaryButton
@@ -322,6 +384,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  qrCard: {
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    gap: 16,
+  },
+  qrFrame: {
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  qrName: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  qrDesc: {
+    fontSize: 13,
+  },
+  qrActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  qrActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    borderRadius: 22,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  qrActionText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   addBtn: {
     marginTop: 8,
