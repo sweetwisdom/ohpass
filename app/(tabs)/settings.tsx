@@ -18,10 +18,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '@/components/design-system';
 import { SectionHeader, SettingsRow, ToggleSwitch } from '@/components/ui';
+import { useThemePreference } from '@/contexts/ThemeContext';
 
 export default function SettingsScreen() {
-  const { colors } = useTheme();
-  const [darkMode, setDarkMode] = useState(false);
+  const { colors, isDark } = useTheme();
+  const { themePreference, setThemePreference } = useThemePreference();
   const [notifications, setNotifications] = useState(true);
 
   return (
@@ -29,7 +30,7 @@ export default function SettingsScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={['top']}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -89,8 +90,8 @@ export default function SettingsScreen() {
             showChevron={false}
             rightElement={
               <ToggleSwitch
-                value={darkMode}
-                onValueChange={(val) => setDarkMode(val)}
+                value={themePreference === 'dark' || (themePreference === 'system' && isDark)}
+                onValueChange={(val) => setThemePreference(val ? 'dark' : 'light')}
               />
             }
           />
