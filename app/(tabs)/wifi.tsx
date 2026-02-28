@@ -1,9 +1,9 @@
 /**
  * OhPass - Wi-Fi 管理页面
- * 基于 Pencil 设计稿的 Wi-Fi 管理
+ * 接入真实数据，支持增删改查和复制密码
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,41 +11,81 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '@/components/design-system';
-import { SearchBar } from '@/components/ui';
+import { SearchBar, PrimaryButton } from '@/components/ui';
+import { useData } from '@/contexts/DataContext';
+import { getCategoryColor } from '@/utils/password';
 
-const mockWifiList = [
-  {
-    id: '1',
-    name: 'Home Network',
-    status: '已连接 · WPA3',
-    iconBgColor: '#007AFF',
-    showQR: true,
-    showShare: true,
-  },
-  {
-    id: '2',
-    name: 'Office-5G',
-    status: '已保存 · WPA2',
-    iconBgColor: '#34C759',
-    showQR: true,
-    showShare: false,
-  },
-  {
-    id: '3',
-    name: 'Cafe_FreeWifi',
-    status: '已保存 · 开放',
-    iconBgColor: '#FF9500',
-    showQR: false,
-    showShare: false,
-  },
-];
+const SECURITY_TYPES = ['WPA2', 'WPA3', 'WEP', '开放'];
 
 export default function WifiScreen() {
   const { colors, isDark } = useTheme();
+  const { wifiNetworks, addWifiNetwork, removeWifiNetwork } = useData();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSsid, setNewSsid] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newSecurity, setNewSecurity] = useState(0);
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+
+  const filtered = searchQuery
+    ? wifiNetworks.filter(w => w.ssid.toLowerCase().includes(searchQuery.toLowerCase()))
+    : wifiNetworks;
+
+  const handleCopyPassword = async (password: string, ssid: string) => {
+    await Clipboard.setStringAsync(password);
+    Alert.alert('已复制', `${ssid} 的密码已复制到剪贴板`);
+  };
+
+  const handleDelete = (id: string, ssid: string) => {
+    Alert.alert(
+      '删除 Wi-Fi',
+      `确定要删除 "${ssid}" 吗？`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '删除',
+          style: 'destructive',
+          onPress: () => removeWifiNetwork(id),
+        },
+      ]
+    );
+  };
+
+  const toggleShowPassword = (id: string) => {
+    setShowPasswords(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleAdd = async () => {
+    if (!newSsid.trim()) {
+      Alert.alert('提示', '请输入 Wi-Fi 名称');
+      return;
+    }
+    if (!newPassword.trim()) {
+      Alert.alert('提示', '请输入密码');
+      return;
+    }
+
+    await addWifiNetwork({
+      ssid: newSsid.trim(),
+      password: newPassword,
+      security_type: SECURITY_TYPES[newSecurity],
+      is_hidden: 0,
+      notes: '',
+    });
+
+    setNewSsid('');
+    setNewPassword('');
+    setNewSecurity(0);
+    setShowAddModal(false);
+  };
 
   return (
     <SafeAreaView
@@ -54,93 +94,156 @@ export default function WifiScreen() {
     >
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* Content */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Title */}
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Wi-Fi</Text>
-
-        {/* Search Bar */}
-        <SearchBar placeholder="搜索 Wi-Fi" />
-
-        {/* Wi-Fi List - Grouped Card */}
-        <View style={[styles.wifiListCard, { borderRadius: 12 }]}>
-          {mockWifiList.map((wifi, index) => (
-            <TouchableOpacity
-              key={wifi.id}
-              style={[
-                styles.wifiRow,
-                { backgroundColor: colors.card },
-                index < mockWifiList.length - 1 && styles.wifiRowGap,
-              ]}
-              activeOpacity={0.7}
-            >
-              {/* Icon */}
-              <View
-                style={[
-                  styles.wifiIcon,
-                  { backgroundColor: wifi.iconBgColor },
-                ]}
-              >
-                <Ionicons name="wifi" size={20} color="#FFFFFF" />
-              </View>
-
-              {/* Info */}
-              <View style={styles.wifiInfo}>
-                <Text style={[styles.wifiName, { color: colors.textPrimary }]}>
-                  {wifi.name}
-                </Text>
-                <Text style={[styles.wifiStatus, { color: colors.textSecondary }]}>
-                  {wifi.status}
-                </Text>
-              </View>
-
-              {/* Actions */}
-              <View style={styles.wifiActions}>
-                {wifi.showQR && (
-                  <Ionicons name="qr-code-outline" size={18} color={colors.accentBlue} />
-                )}
-                {wifi.showShare && (
-                  <Ionicons name="share-outline" size={18} color={colors.accentBlue} />
-                )}
-                <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Share Wi-Fi Section */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-          分享 Wi-Fi
-        </Text>
-
-        <View style={[styles.qrCard, { backgroundColor: colors.card }]}>
-          {/* QR Code Area */}
-          <View style={styles.qrFrame}>
-            <Ionicons name="qr-code" size={120} color="#000000" />
-          </View>
-
-          <Text style={[styles.qrName, { color: colors.textPrimary }]}>
-            Home Network
-          </Text>
-
-          <Text style={[styles.qrDesc, { color: colors.textSecondary }]}>
-            扫描二维码即可连接此 Wi-Fi 网络
-          </Text>
-
-          {/* Share Button */}
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Wi-Fi</Text>
           <TouchableOpacity
-            style={[styles.shareBtn, { backgroundColor: colors.accentBlue }]}
-            activeOpacity={0.8}
+            style={[styles.headerBtn, { backgroundColor: colors.bgTertiary }]}
+            onPress={() => setShowAddModal(true)}
           >
-            <Ionicons name="share-outline" size={16} color="#FFFFFF" />
-            <Text style={styles.shareBtnText}>分享</Text>
+            <Ionicons name="add" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
+
+        {/* Search */}
+        <SearchBar
+          placeholder="搜索 Wi-Fi"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+
+        {/* Wi-Fi List */}
+        {filtered.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="wifi-outline" size={64} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+              {searchQuery ? '没有找到匹配的 Wi-Fi' : '还没有保存任何 Wi-Fi'}
+            </Text>
+          </View>
+        ) : (
+          <View style={[styles.wifiListCard, { borderRadius: 12 }]}>
+            {filtered.map((wifi, index) => (
+              <TouchableOpacity
+                key={wifi.id}
+                style={[
+                  styles.wifiRow,
+                  { backgroundColor: colors.card },
+                  index < filtered.length - 1 && styles.wifiRowGap,
+                ]}
+                onPress={() => handleCopyPassword(wifi.password, wifi.ssid)}
+                onLongPress={() => handleDelete(wifi.id, wifi.ssid)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.wifiIcon, { backgroundColor: getCategoryColor(wifi.ssid) }]}>
+                  <Ionicons name="wifi" size={20} color="#FFFFFF" />
+                </View>
+
+                <View style={styles.wifiInfo}>
+                  <Text style={[styles.wifiName, { color: colors.textPrimary }]}>
+                    {wifi.ssid}
+                  </Text>
+                  <Text style={[styles.wifiStatus, { color: colors.textSecondary }]}>
+                    {wifi.security_type} · {showPasswords[wifi.id] ? wifi.password : '••••••••'}
+                  </Text>
+                </View>
+
+                <View style={styles.wifiActions}>
+                  <TouchableOpacity onPress={() => toggleShowPassword(wifi.id)}>
+                    <Ionicons
+                      name={showPasswords[wifi.id] ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                      color={colors.accentBlue}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleCopyPassword(wifi.password, wifi.ssid)}>
+                    <Ionicons name="copy-outline" size={18} color={colors.accentBlue} />
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <PrimaryButton
+          title="添加 Wi-Fi"
+          icon="add"
+          onPress={() => setShowAddModal(true)}
+          style={styles.addBtn}
+        />
       </ScrollView>
+
+      {/* Add Modal */}
+      <Modal visible={showAddModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <Text style={[styles.modalCancel, { color: colors.accentBlue }]}>取消</Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>添加 Wi-Fi</Text>
+              <TouchableOpacity onPress={handleAdd}>
+                <Text style={[styles.modalSave, { color: colors.accentBlue }]}>保存</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalForm}>
+              <View style={[styles.modalField, { backgroundColor: colors.card }]}>
+                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Wi-Fi 名称 (SSID)</Text>
+                <TextInput
+                  style={[styles.modalInput, { color: colors.textPrimary }]}
+                  placeholder="如：Home Network"
+                  placeholderTextColor={colors.textTertiary}
+                  value={newSsid}
+                  onChangeText={setNewSsid}
+                />
+              </View>
+              <View style={[styles.modalField, { backgroundColor: colors.card }]}>
+                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>密码</Text>
+                <TextInput
+                  style={[styles.modalInput, { color: colors.textPrimary }]}
+                  placeholder="Wi-Fi 密码"
+                  placeholderTextColor={colors.textTertiary}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  autoCapitalize="none"
+                />
+              </View>
+              <View style={styles.securityRow}>
+                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>加密方式</Text>
+                <View style={styles.securityChips}>
+                  {SECURITY_TYPES.map((type, index) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.securityChip,
+                        {
+                          backgroundColor: newSecurity === index ? colors.accentBlue : colors.card,
+                        },
+                      ]}
+                      onPress={() => setNewSecurity(index)}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: '500',
+                          color: newSecurity === index ? '#FFFFFF' : colors.textPrimary,
+                        }}
+                      >
+                        {type}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -157,10 +260,33 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     gap: 20,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+  },
   headerTitle: {
     fontSize: 34,
     fontWeight: '700',
-    paddingTop: 8,
+  },
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
   },
   wifiListCard: {
     overflow: 'hidden',
@@ -197,44 +323,66 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+  addBtn: {
+    marginTop: 8,
   },
-  qrCard: {
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    gap: 16,
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  qrFrame: {
-    width: 160,
-    height: 160,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
   },
-  qrName: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  qrDesc: {
-    fontSize: 13,
-  },
-  shareBtn: {
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    height: 44,
-    borderRadius: 22,
-    paddingHorizontal: 24,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  modalCancel: {
+    fontSize: 16,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  modalSave: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalForm: {
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  modalField: {
+    borderRadius: 12,
+    padding: 16,
     gap: 8,
   },
-  shareBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+  modalLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  modalInput: {
+    fontSize: 16,
+    padding: 0,
+  },
+  securityRow: {
+    gap: 8,
+  },
+  securityChips: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  securityChip: {
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
