@@ -5,10 +5,13 @@
 
 import { useTheme } from '@/components/design-system';
 import { FilterChip, PasswordRow, PrimaryButton, SearchBar, SectionHeader } from '@/components/ui';
+import { useData } from '@/contexts/DataContext';
+import { getCategoryColor, getIconName } from '@/utils/password';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -17,24 +20,32 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { PasswordEntry } from '@/services/database';
 
-// 模拟数据
-const mockPasswords = [
-  { id: '1', title: 'Google', subtitle: 'user@gmail.com', icon: 'globe', iconColor: '#4285F4' },
-  { id: '2', title: 'Apple', subtitle: 'user@icloud.com', icon: 'logo-apple', iconColor: '#000000' },
-  { id: '3', title: 'GitHub', subtitle: 'dev@github.com', icon: 'logo-github', iconColor: '#333333' },
-  { id: '4', title: 'Twitter/X', subtitle: '@myhandle', icon: 'logo-twitter', iconColor: '#1DA1F2' },
-  { id: '5', title: 'Netflix', subtitle: 'user@email.com', icon: 'tv', iconColor: '#E50914' },
-  { id: '6', title: 'Amazon', subtitle: 'shopper@amazon.com', icon: 'cart', iconColor: '#FF9900' },
-  { id: '7', title: 'Slack', subtitle: 'work@company.com', icon: 'chatbubbles', iconColor: '#4A154B' },
-];
-
-const filterOptions = ['全部', 'App', '网站', 'Wi-Fi'];
+const filterOptions = ['全部', '网站', 'App', '其他'];
 
 export default function PasswordScreen() {
   const { colors, spacing } = useTheme();
+  const { passwords, isLoading, searchPasswords } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('全部');
+  const [filteredPasswords, setFilteredPasswords] = useState<PasswordEntry[]>([]);
+
+  const doSearch = useCallback(async () => {
+    const results = await searchPasswords(searchQuery, activeFilter);
+    setFilteredPasswords(results);
+  }, [searchQuery, activeFilter, searchPasswords]);
+
+  useEffect(() => {
+    doSearch();
+  }, [doSearch]);
+
+  // 同步最新密码列表
+  useEffect(() => {
+    if (!searchQuery && activeFilter === '全部') {
+      setFilteredPasswords(passwords);
+    }
+  }, [passwords, searchQuery, activeFilter]);
 
   const handlePasswordPress = (id: string) => {
     router.push(`/password/${id}`);
@@ -55,10 +66,7 @@ export default function PasswordScreen() {
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>密码</Text>
         <TouchableOpacity
-          style={[
-            styles.headerBtn,
-            { backgroundColor: colors.bgTertiary },
-          ]}
+          style={[styles.headerBtn, { backgroundColor: colors.bgTertiary }]}
         >
           <Ionicons name="ellipsis-horizontal" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -91,29 +99,41 @@ export default function PasswordScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Section Header */}
-        <SectionHeader
-          title="最近使用"
-          actionText="查看全部"
-          onActionPress={() => {}}
-        />
-
-        {/* Password List */}
-        <View style={styles.passwordList}>
-          {mockPasswords.map((item) => (
-            <PasswordRow
-              key={item.id}
-              title={item.title}
-              subtitle={item.subtitle}
-              icon={item.icon as any}
-              iconColor={item.iconColor}
-              onPress={() => handlePasswordPress(item.id)}
-              style={styles.passwordItem}
+        {isLoading ? (
+          <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+        ) : filteredPasswords.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="key-outline" size={64} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+              {searchQuery || activeFilter !== '全部' ? '没有找到匹配的密码' : '还没有保存任何密码'}
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
+              {searchQuery || activeFilter !== '全部' ? '试试其他搜索词或筛选条件' : '点击下方按钮添加第一个密码'}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <SectionHeader
+              title={`全部密码 (${filteredPasswords.length})`}
+              actionText=""
+              onActionPress={() => {}}
             />
-          ))}
-        </View>
+            <View style={styles.passwordList}>
+              {filteredPasswords.map((item) => (
+                <PasswordRow
+                  key={item.id}
+                  title={item.title}
+                  subtitle={item.username || item.website}
+                  icon={getIconName(item.category) as any}
+                  iconColor={item.icon_color || getCategoryColor(item.title)}
+                  onPress={() => handlePasswordPress(item.id)}
+                  style={styles.passwordItem}
+                />
+              ))}
+            </View>
+          </>
+        )}
 
-        {/* Add Button */}
         <PrimaryButton
           title="添加密码"
           icon="add"
@@ -153,13 +173,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   filterRow: {
-     flexDirection: 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     gap: 8,
     marginBottom: 16,
-    height: 40, // 固定高度
-    
+    height: 40,
   },
   content: {
     flex: 1,
@@ -177,5 +196,24 @@ const styles = StyleSheet.create({
   },
   addButton: {
     marginTop: 8,
+  },
+  loader: {
+    marginTop: 60,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

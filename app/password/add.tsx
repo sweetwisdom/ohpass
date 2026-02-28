@@ -3,7 +3,7 @@
  * 基于 Pencil 设计稿的添加编辑条目
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,24 +12,30 @@ import {
   TouchableOpacity,
   TextInput,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/components/design-system';
+import { useData } from '@/contexts/DataContext';
+import { generatePassword, getCategoryColor } from '@/utils/password';
 
-const TAG_OPTIONS = ['网站', 'App', 'Wi-Fi', '其他'];
+const TAG_OPTIONS = ['网站', 'App', '其他'];
+const TAG_MAP: Record<string, string> = { '网站': 'website', 'App': 'app', '其他': 'other' };
+const TAG_REVERSE: Record<string, number> = { website: 0, app: 1, other: 2 };
 
 const GEN_OPTIONS = [
-  { label: 'A-Z', key: 'upper' },
-  { label: 'a-z', key: 'lower' },
-  { label: '0-9', key: 'digits' },
+  { label: 'A-Z', key: 'uppercase' },
+  { label: 'a-z', key: 'lowercase' },
+  { label: '0-9', key: 'numbers' },
   { label: '#@$', key: 'symbols' },
 ];
 
 export default function AddPasswordScreen() {
   const { colors, isDark } = useTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const { addPassword, editPassword, passwords } = useData();
   const isEditing = !!id;
 
   const [serviceName, setServiceName] = useState('');
@@ -38,35 +44,100 @@ export default function AddPasswordScreen() {
   const [password, setPassword] = useState('');
   const [note, setNote] = useState('');
   const [selectedTag, setSelectedTag] = useState(0);
+  const [genLength, setGenLength] = useState(16);
   const [genOptions, setGenOptions] = useState<Record<string, boolean>>({
-    upper: true,
-    lower: true,
-    digits: true,
+    uppercase: true,
+    lowercase: true,
+    numbers: true,
     symbols: true,
   });
-  const [generatedPassword, setGeneratedPassword] = useState('kX9#mP2$vL7@nQ');
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // 编辑模式：加载已有数据
+  useEffect(() => {
+    if (isEditing && id) {
+      const existing = passwords.find(p => p.id === id);
+      if (existing) {
+        setServiceName(existing.title);
+        setUrl(existing.website);
+        setUsername(existing.username);
+        setPassword(existing.password);
+        setNote(existing.notes);
+        setSelectedTag(TAG_REVERSE[existing.category] ?? 0);
+      }
+    }
+  }, [isEditing, id, passwords]);
+
+  // 初始生成密码
+  useEffect(() => {
+    handleGenerate();
+  }, []);
 
   const handleGenerate = () => {
-    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lower = 'abcdefghijklmnopqrstuvwxyz';
-    const digits = '0123456789';
-    const symbols = '!@#$%^&*()_+-=';
-    let chars = '';
-    if (genOptions.upper) chars += upper;
-    if (genOptions.lower) chars += lower;
-    if (genOptions.digits) chars += digits;
-    if (genOptions.symbols) chars += symbols;
-    if (!chars) chars = upper + lower;
-    let result = '';
-    for (let i = 0; i < 16; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setGeneratedPassword(result);
+    const pwd = generatePassword({
+      length: genLength,
+      uppercase: genOptions.uppercase,
+      lowercase: genOptions.lowercase,
+      numbers: genOptions.numbers,
+      symbols: genOptions.symbols,
+    });
+    setGeneratedPassword(pwd);
+  };
+
+  const handleUseGenerated = () => {
+    setPassword(generatedPassword);
   };
 
   const toggleGenOption = (key: string) => {
     setGenOptions((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const handleSave = async () => {
+    if (!serviceName.trim()) {
+      Alert.alert('提示', '请输入服务名称');
+      return;
+    }
+    if (!password.trim()) {
+      Alert.alert('提示', '请输入密码');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const category = TAG_MAP[TAG_OPTIONS[selectedTag]] || 'website';
+      const iconColor = getCategoryColor(serviceName);
+
+      if (isEditing && id) {
+        await editPassword(id, {
+          title: serviceName.trim(),
+          website: url.trim(),
+          username: username.trim(),
+          password: password,
+          category,
+          icon_color: iconColor,
+          notes: note.trim(),
+        });
+      } else {
+        await addPassword({
+          title: serviceName.trim(),
+          website: url.trim(),
+          username: username.trim(),
+          password: password,
+          category,
+          icon_color: iconColor,
+          notes: note.trim(),
+        });
+      }
+      router.back();
+    } catch {
+      Alert.alert('错误', '保存失败，请重试');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sliderPercent = `${Math.round(((genLength - 8) / 24) * 100)}%`;
 
   return (
     <SafeAreaView
@@ -83,8 +154,10 @@ export default function AddPasswordScreen() {
         <Text style={[styles.navTitle, { color: colors.textPrimary }]}>
           {isEditing ? '编辑密码' : '添加密码'}
         </Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.navSave, { color: colors.accentBlue }]}>保存</Text>
+        <TouchableOpacity onPress={handleSave} disabled={saving}>
+          <Text style={[styles.navSave, { color: saving ? colors.textTertiary : colors.accentBlue }]}>
+            {saving ? '保存中...' : '保存'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -110,7 +183,6 @@ export default function AddPasswordScreen() {
 
         {/* Form Group */}
         <View style={[styles.formGroup, { borderRadius: 12 }]}>
-          {/* 服务名称 */}
           <View style={[styles.formRow, { backgroundColor: colors.card }]}>
             <Text style={[styles.formLabel, { color: colors.textSecondary }]}>服务名称</Text>
             <TextInput
@@ -122,7 +194,6 @@ export default function AddPasswordScreen() {
             />
           </View>
 
-          {/* 地址 */}
           <View style={[styles.formRow, { backgroundColor: colors.card }]}>
             <Text style={[styles.formLabel, { color: colors.textSecondary }]}>地址</Text>
             <TextInput
@@ -135,7 +206,6 @@ export default function AddPasswordScreen() {
             />
           </View>
 
-          {/* 用户名 */}
           <View style={[styles.formRow, { backgroundColor: colors.card }]}>
             <Text style={[styles.formLabel, { color: colors.textSecondary }]}>用户名</Text>
             <TextInput
@@ -148,7 +218,6 @@ export default function AddPasswordScreen() {
             />
           </View>
 
-          {/* 密码 */}
           <View style={[styles.formRow, { backgroundColor: colors.card }]}>
             <Text style={[styles.formLabel, { color: colors.textSecondary }]}>密码</Text>
             <TextInput
@@ -157,18 +226,18 @@ export default function AddPasswordScreen() {
               placeholderTextColor={colors.textTertiary}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
               autoCapitalize="none"
             />
-            <Ionicons name="sparkles" size={18} color={colors.accentBlue} />
+            <TouchableOpacity onPress={handleUseGenerated}>
+              <Ionicons name="sparkles" size={18} color={colors.accentBlue} />
+            </TouchableOpacity>
           </View>
 
-          {/* 备注 */}
           <View style={[styles.formRowNote, { backgroundColor: colors.card }]}>
             <Text style={[styles.formLabel, { color: colors.textSecondary }]}>备注</Text>
             <TextInput
               style={[styles.formInput, { color: colors.textPrimary }]}
-              placeholder="个人账户，包含 Google 全套服务"
+              placeholder="个人账户备注信息"
               placeholderTextColor={colors.textTertiary}
               value={note}
               onChangeText={setNote}
@@ -179,9 +248,7 @@ export default function AddPasswordScreen() {
 
         {/* 分类标签 */}
         <View style={styles.tagSection}>
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            分类标签
-          </Text>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>分类标签</Text>
           <View style={styles.tagRow}>
             {TAG_OPTIONS.map((tag, index) => (
               <TouchableOpacity
@@ -209,27 +276,34 @@ export default function AddPasswordScreen() {
 
         {/* 密码生成器 */}
         <View style={styles.genSection}>
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            密码生成器
-          </Text>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>密码生成器</Text>
           <View style={[styles.genCard, { backgroundColor: colors.card }]}>
-            {/* Generated password */}
-            <Text style={[styles.genPassword, { color: colors.accentBlue }]}>
-              {generatedPassword}
-            </Text>
+            <TouchableOpacity onPress={handleUseGenerated}>
+              <Text style={[styles.genPassword, { color: colors.accentBlue }]}>
+                {generatedPassword}
+              </Text>
+              <Text style={[styles.genHint, { color: colors.textTertiary }]}>
+                点击使用此密码
+              </Text>
+            </TouchableOpacity>
 
-            {/* Length */}
             <View style={styles.genLenRow}>
               <Text style={[styles.genLenLabel, { color: colors.textSecondary }]}>长度</Text>
-              <Text style={[styles.genLenValue, { color: colors.textPrimary }]}>16 位</Text>
+              <View style={styles.genLenControls}>
+                <TouchableOpacity onPress={() => setGenLength(Math.max(8, genLength - 2))}>
+                  <Ionicons name="remove-circle-outline" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <Text style={[styles.genLenValue, { color: colors.textPrimary }]}>{genLength} 位</Text>
+                <TouchableOpacity onPress={() => setGenLength(Math.min(32, genLength + 2))}>
+                  <Ionicons name="add-circle-outline" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Slider (visual) */}
             <View style={[styles.genSliderBg, { backgroundColor: colors.bgTertiary }]}>
-              <View style={[styles.genSliderFill, { backgroundColor: colors.accentBlue }]} />
+              <View style={[styles.genSliderFill, { backgroundColor: colors.accentBlue, width: sliderPercent as any }]} />
             </View>
 
-            {/* Options */}
             <View style={styles.genOptsRow}>
               {GEN_OPTIONS.map((opt) => (
                 <TouchableOpacity
@@ -258,7 +332,6 @@ export default function AddPasswordScreen() {
               ))}
             </View>
 
-            {/* Regenerate button */}
             <TouchableOpacity
               style={[styles.genRefreshBtn, { backgroundColor: colors.accentBlue }]}
               onPress={handleGenerate}
@@ -380,6 +453,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 2,
   },
+  genHint: {
+    fontSize: 12,
+    marginTop: 4,
+  },
   genLenRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -388,9 +465,16 @@ const styles = StyleSheet.create({
   genLenLabel: {
     fontSize: 14,
   },
+  genLenControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   genLenValue: {
     fontSize: 14,
     fontWeight: '600',
+    minWidth: 40,
+    textAlign: 'center',
   },
   genSliderBg: {
     height: 6,
@@ -400,7 +484,6 @@ const styles = StyleSheet.create({
   genSliderFill: {
     height: 6,
     borderRadius: 3,
-    width: '65%',
   },
   genOptsRow: {
     flexDirection: 'row',
