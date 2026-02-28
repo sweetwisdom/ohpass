@@ -9,6 +9,8 @@ OhPass 是一个使用 Expo + React Native 构建的密码管理器应用，基�
 - **设计系统**: 自定义 design-system (位于 `components/design-system/`)
 - **UI 组件库**: 自定义 UI 组件 (位于 `components/ui/`)
 
+- 原型稿 design，使用pencil创建（位于 `design.pen`）
+
 ## 目录结构
 
 ```
@@ -128,6 +130,41 @@ npx tsc --noEmit
 # ESLint 检查
 npm run lint
 ```
+
+## Expo Go 兼容性规则（重要）
+
+本项目使用 **Expo Go** 进行开发调试，Expo Go 内置了一组固定的原生模块，**不能安装任意带原生代码的第三方包**。违反此规则会导致运行时崩溃（如 `Native module is null`）。
+
+### 禁止使用的包
+
+以下包需要自定义原生构建（development build），**不兼容 Expo Go**：
+
+| 禁止使用 | 替代方案 |
+|----------|---------|
+| `@react-native-async-storage/async-storage` | `expo-secure-store`（敏感数据）或纯 React 状态（非关键数据） |
+| `react-native-keychain` | `expo-secure-store` |
+| `react-native-biometrics` | `expo-local-authentication` |
+| `react-native-sqlite-storage` | `expo-sqlite` |
+| `react-native-fs` | `expo-file-system` |
+| `react-native-camera` | `expo-camera` |
+| `react-native-ble-plx` | 需 development build，无 Expo Go 替代 |
+| 其他 `react-native-*` 非 Expo 内置包 | 先查 Expo SDK 是否有对应模块 |
+
+### 安全使用原则
+
+1. **优先使用 `expo-*` 官方模块** — 这些模块已内置于 Expo Go，无需额外原生链接
+2. **添加新依赖前必须检查兼容性** — 查看 [Expo SDK 内置模块列表](https://docs.expo.dev/versions/latest/) 确认是否支持
+3. **纯 JS 包可以自由使用** — 不含原生代码的包（如 `lodash`、`date-fns`、`zod`）无此限制
+4. **如需使用不兼容的原生包** — 必须迁移到 development build（`npx expo run:android`），需用户确认
+
+### 数据持久化方案
+
+| 场景 | 推荐方案 |
+|------|---------|
+| 敏感数据（密码、token） | `expo-secure-store` |
+| 非关键偏好设置（主题、语言） | 纯 React 状态（重启重置）或 `expo-secure-store` |
+| 结构化数据存储 | `expo-sqlite` |
+| 文件存储 | `expo-file-system` |
 
 ## 开发规范
 
