@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { ThemePreferenceProvider, useResolvedColorScheme } from '@/contexts/ThemeContext';
+import { DataProvider } from '@/contexts/DataContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -58,7 +59,9 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <ThemePreferenceProvider>
-      <RootLayoutContent />
+      <DataProvider>
+        <RootLayoutContent />
+      </DataProvider>
     </ThemePreferenceProvider>
   );
 }
