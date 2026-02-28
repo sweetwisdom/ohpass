@@ -234,8 +234,12 @@ import { Ionicons } from '@expo/vector-icons';
 // 可用图标: key, wifi, shield-checkmark, settings, globe, lock, etc.
 <Ionicons name="key" size={24} color={colors.primary} />
 ```
+## 上下文压缩
+
+- 当上下文太长请自动处理压缩，或者其他操作
 
 ## 自动 Git 工作流
+
 
 完成每个功能或修改任务后，**自动执行以下 Git 操作**（无需用户确认）：
 
